@@ -2,8 +2,11 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { CategoryId, WordCategory, wordCategories } from '@/data/wordBanks';
 import { buildPhrase } from '@/utils/phraseBuilder';
+import { generateChallengePhrase, isChatGPTConfigured } from '@/services/chatgpt';
 
 type Mode = 'serious' | 'wild';
+
+type AiStatus = 'idle' | 'loading' | 'error';
 
 type CategoryState = WordCategory & {
   active: boolean;
@@ -29,6 +32,8 @@ const createInitialState = (): CategoryState[] =>
 
 const getUniqueId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
+const chatGptAvailable = isChatGPTConfigured();
+
 export const useSpinWheel = () => {
   const [categories, setCategories] = useState<CategoryState[]>(createInitialState);
   const [mode, setMode] = useState<Mode>('serious');
@@ -36,6 +41,11 @@ export const useSpinWheel = () => {
   const [lastResult, setLastResult] = useState<ChallengeResult | null>(null);
   const [history, setHistory] = useState<ChallengeResult[]>([]);
   const [savedChallenges, setSavedChallenges] = useState<ChallengeResult[]>([]);
+  const [aiEnabledState, setAiEnabledState] = useState<boolean>(chatGptAvailable);
+  const [aiStatus, setAiStatus] = useState<AiStatus>('idle');
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const aiEnabled = aiEnabledState && chatGptAvailable;
 
   const spin = useCallback(async () => {
     if (spinning) {
@@ -43,6 +53,12 @@ export const useSpinWheel = () => {
     }
 
     setSpinning(true);
+    setAiError(null);
+    if (aiEnabled) {
+      setAiStatus('loading');
+    } else {
+      setAiStatus('idle');
+    }
 
     const selections: Partial<Record<CategoryId, string>> = {};
 
@@ -63,7 +79,21 @@ export const useSpinWheel = () => {
       }),
     );
 
-    const phrase = buildPhrase(selections, mode);
+    let phrase: string;
+
+    if (aiEnabled) {
+      try {
+        phrase = await generateChallengePhrase({ selections, mode });
+        setAiStatus('idle');
+      } catch (error) {
+        console.error(error);
+        setAiStatus('error');
+        setAiError(error instanceof Error ? error.message : 'Unable to reach ChatGPT.');
+        phrase = buildPhrase(selections, mode);
+      }
+    } else {
+      phrase = buildPhrase(selections, mode);
+    }
 
     const result: ChallengeResult = {
       id: getUniqueId(),
@@ -80,7 +110,7 @@ export const useSpinWheel = () => {
     setSpinning(false);
 
     return result;
-  }, [mode, spinning]);
+  }, [aiEnabled, mode, spinning]);
 
   const toggleCategory = useCallback((id: CategoryId) => {
     setCategories((prev) =>
@@ -174,6 +204,10 @@ export const useSpinWheel = () => {
     setHistory([]);
   }, []);
 
+  const setAiEnabled = useCallback((enabled: boolean) => {
+    setAiEnabledState(enabled && chatGptAvailable);
+  }, []);
+
   const value = useMemo(
     () => ({
       categories,
@@ -191,6 +225,11 @@ export const useSpinWheel = () => {
       saveCurrentResult,
       deleteSavedChallenge,
       clearHistory,
+      aiEnabled,
+      aiAvailable: chatGptAvailable,
+      setAiEnabled,
+      aiStatus,
+      aiError,
     }),
     [
       categories,
@@ -207,6 +246,10 @@ export const useSpinWheel = () => {
       saveCurrentResult,
       deleteSavedChallenge,
       clearHistory,
+      aiEnabled,
+      setAiEnabled,
+      aiStatus,
+      aiError,
     ],
   );
 

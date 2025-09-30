@@ -44,6 +44,17 @@ export const SpinWheel = ({ store, rotation }: SpinWheelProps) => {
         width: { xs: 260, sm: 320, md: 360 },
         height: { xs: 260, sm: 320, md: 360 },
         mx: 'auto',
+        animation: 'wheelFloat 6.5s ease-in-out infinite',
+        '&:after': {
+          content: '""',
+          position: 'absolute',
+          inset: '-12%',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(124,108,255,0.22), transparent 65%)',
+          filter: 'blur(0px)',
+          zIndex: 0,
+          animation: 'haloPulse 4.2s ease-in-out infinite',
+        },
       }}
     >
       <Box
@@ -63,6 +74,16 @@ export const SpinWheel = ({ store, rotation }: SpinWheelProps) => {
           transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
           boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
           border: '8px solid rgba(255,255,255,0.07)',
+          overflow: 'hidden',
+          zIndex: 1,
+          '&:before': {
+            content: '""',
+            position: 'absolute',
+            inset: '-40%',
+            background: 'conic-gradient(from 90deg, rgba(255,255,255,0.08), transparent 65%)',
+            animation: 'spin 8s linear infinite',
+            pointerEvents: 'none',
+          },
         }}
       >
         {segments.map((segment, index) => {

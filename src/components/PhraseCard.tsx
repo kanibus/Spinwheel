@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import {
+  Alert,
   Box,
   Button,
   Chip,
+  CircularProgress,
   Divider,
   IconButton,
   Paper,
@@ -19,9 +21,12 @@ import { ChallengeResult } from '@/hooks/useSpinWheel';
 interface PhraseCardProps {
   result: ChallengeResult | null;
   onSave: () => boolean;
+  aiStatus: 'idle' | 'loading' | 'error';
+  aiEnabled: boolean;
+  aiError: string | null;
 }
 
-export const PhraseCard = ({ result, onSave }: PhraseCardProps) => {
+export const PhraseCard = ({ result, onSave, aiStatus, aiEnabled, aiError }: PhraseCardProps) => {
   const [snackbar, setSnackbar] = useState<string | null>(null);
 
   if (!result) {
@@ -30,17 +35,38 @@ export const PhraseCard = ({ result, onSave }: PhraseCardProps) => {
         elevation={0}
         sx={{
           p: 4,
-          background: 'rgba(255,255,255,0.05)',
+          background: 'linear-gradient(135deg, rgba(124,108,255,0.16), rgba(20,19,45,0.92))',
           textAlign: 'center',
           borderRadius: 3,
+          border: '1px solid rgba(255,255,255,0.08)',
+          minHeight: 220,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
       >
-        <Typography variant="h6" sx={{ fontWeight: 600 }} gutterBottom>
-          Spin the wheel to generate your first Silverside challenge!
-        </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.7 }}>
-          Each spin blends default inspirations with your custom ideas to unlock a mini creative brief.
-        </Typography>
+        <Stack spacing={2} alignItems="center" maxWidth={420}>
+          {aiEnabled && aiStatus === 'loading' ? (
+            <>
+              <CircularProgress color="secondary" thickness={5} />
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Crafting a fresh challenge with ChatGPT...
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                Hang tight while the AI stitches together your category picks into a mini brief.
+              </Typography>
+            </>
+          ) : (
+            <>
+              <Typography variant="h6" sx={{ fontWeight: 600 }} gutterBottom>
+                Spin the wheel to generate your first Silverside challenge!
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                Each spin blends default inspirations with your custom ideas to unlock a mini creative brief.
+              </Typography>
+            </>
+          )}
+        </Stack>
       </Paper>
     );
   }
@@ -64,12 +90,22 @@ export const PhraseCard = ({ result, onSave }: PhraseCardProps) => {
       elevation={0}
       sx={{
         p: { xs: 3, sm: 4 },
-        background: 'linear-gradient(135deg, rgba(124,108,255,0.18), rgba(20,19,45,0.95))',
+        background: 'linear-gradient(135deg, rgba(124,108,255,0.2), rgba(20,19,45,0.92))',
         borderRadius: 3,
         border: '1px solid rgba(255,255,255,0.08)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&:before': {
+          content: '""',
+          position: 'absolute',
+          inset: 0,
+          background: 'radial-gradient(circle at top right, rgba(93,226,231,0.2), transparent 55%)',
+          opacity: 0.8,
+          pointerEvents: 'none',
+        },
       }}
     >
-      <Stack spacing={2.5}>
+      <Stack spacing={2.5} position="relative">
         <Box>
           <Typography variant="overline" sx={{ letterSpacing: 2 }}>
             Mode
@@ -99,6 +135,11 @@ export const PhraseCard = ({ result, onSave }: PhraseCardProps) => {
             </span>
           </Tooltip>
         </Stack>
+        {aiEnabled && aiStatus === 'error' && (
+          <Alert severity="warning" variant="outlined">
+            {aiError ?? 'Something went wrong fetching a ChatGPT suggestion. Showing a locally generated backup instead.'}
+          </Alert>
+        )}
       </Stack>
       <Snackbar
         open={Boolean(snackbar)}
