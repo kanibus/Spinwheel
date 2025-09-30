@@ -1,0 +1,21 @@
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  font-family: 'Poppins', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: radial-gradient(circle at top, #1a1935 0%, #090812 60%);
+  color: #f8f7ff;
+}
+
+* {
+  box-sizing: border-box;
+}
